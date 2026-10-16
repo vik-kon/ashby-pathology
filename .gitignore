@@ -218,3 +218,26 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# data, weights, cached outputs
+data/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.npy
+*.npz
+*.h5
+*.faiss
+embeddings/
+checkpoints/
+
+# secrets
+.env
+*token*
+
+# misc
+.ipynb_checkpoints/
+wandb/
+slurm-*.out
