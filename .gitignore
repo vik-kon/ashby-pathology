@@ -241,3 +241,11 @@ checkpoints/
 .ipynb_checkpoints/
 wandb/
 slurm-*.out
+venv/
+sample_data/
+checkpoints/
+test_images/
+*.bin
+*.pt
+*.npy
+*.faiss
