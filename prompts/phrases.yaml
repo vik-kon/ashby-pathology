@@ -1,0 +1,31 @@
+# Feature 2: "Ctrl+F for a slide". Each key is a name shown in the app dropdown.
+# Each list has synonyms. The code averages their embeddings (a prompt ensemble).
+templates:
+  - "an H&E image of {}."
+  - "a histopathology image showing {}."
+
+phrases:
+  tumor_cells:
+    - "tumor cells"
+    - "invasive carcinoma"
+  necrosis:
+    - "necrosis"
+    - "dead tissue with loss of cellular detail"
+  lymphocytes:
+    - "tumor-infiltrating lymphocytes"
+    - "dense immune cell infiltrate"
+  stroma:
+    - "fibrous stroma"
+    - "connective tissue"
+  glands:
+    - "glandular structures"
+    - "well-formed glands"
+  mitoses:
+    - "mitotic figures"
+    - "dividing cells"
+  normal_tissue:
+    - "normal tissue"
+    - "benign tissue"
+  fat:
+    - "adipose tissue"
+    - "fat cells"
