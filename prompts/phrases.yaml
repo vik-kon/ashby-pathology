@@ -29,3 +29,32 @@ phrases:
   fat:
     - "adipose tissue"
     - "fat cells"
+  epithelium:
+    - "epidermis"
+    - "endothelium"
+    - "mesothelium"
+  lumen:
+    - "cavity"
+    - "hollow"
+  goblet_cell:
+    - "caliciform cell"
+    - "mucous glands"
+  collagen:
+    - "fibrous protein"
+    - "structural protein"
+  glia:
+    - "sustentacular tissue"
+    - "neuroglia"
+  extracellular_matrix:
+    - "interstitial matrix"
+    - "basement membrane"
+  fibroblast:
+    - "reticular cell"
+    - "myofibroblast"
+  dysplasia:
+    - "abnormality"
+    - "intraepithelial neoplasia"
+  hyperchromasia:
+    - "hyperchromia"
+    hyperchromaticity"
+    
