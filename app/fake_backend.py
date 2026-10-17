@@ -7,14 +7,14 @@ It has the SAME function signature and return format the real search should have
                     plus optional extras like "cancer_type"}
 
 If sample_data/metadata.csv exists (Vikram's sample files), results come from those
-images. Otherwise it returns colored placeholder squares.
+images. Otherwise it returns grey placeholder tiles.
 """
 
 import csv
 import random
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SAMPLE_DIR = REPO_ROOT / "sample_data"
@@ -52,16 +52,24 @@ def _load_pool():
     if rows:
         return rows
 
-    # No sample data yet: colored placeholder squares with made-up captions
-    rng = random.Random(0)
+    # No sample data yet: neutral hatched tiles, so nobody mistakes them for tissue
     return [
         {
-            "image": Image.new("RGB", (224, 224), (rng.randint(170, 240), rng.randint(80, 170), rng.randint(150, 220))),
+            "image": _placeholder_tile(),
             "caption": FAKE_CAPTIONS[i % len(FAKE_CAPTIONS)],
             "cancer_type": FAKE_TYPES[i % len(FAKE_TYPES)],
         }
         for i in range(40)
     ]
+
+
+def _placeholder_tile(size=224):
+    """Light grey square with faint diagonal lines: clearly a placeholder, not an image of tissue."""
+    tile = Image.new("RGB", (size, size), (238, 242, 246))
+    draw = ImageDraw.Draw(tile)
+    for offset in range(-size, size, 14):
+        draw.line([(offset, size), (offset + size, 0)], fill=(225, 230, 237), width=2)
+    return tile
 
 
 def search(image, note="", note_weight=0.3, k=10):
