@@ -1,0 +1,11 @@
+torch
+torchvision
+pillow
+scikit-learn
+numpy
+pyyaml
+tqdm
+faiss-cpu
+gradio
+huggingface_hub
+git+https://github.com/Mahmoodlab/CONCH.git

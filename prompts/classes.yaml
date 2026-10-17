@@ -1,0 +1,15 @@
+templates:
+  - "an H&E image of {}."
+  - "a histopathology image showing {}."
+  - "a photomicrograph of {}."
+
+classes:
+  lung_adenocarcinoma:
+    - "lung adenocarcinoma"
+    - "adenocarcinoma of the lung with glandular architecture"
+  lung_squamous:
+    - "lung squamous cell carcinoma"
+    - "squamous cell carcinoma with keratinization and intercellular bridges"
+  benign_lung:
+    - "benign lung tissue"
+    - "normal lung parenchyma"

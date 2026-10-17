@@ -1,0 +1,4 @@
+# data/ is gitignored. Layout: data/patches/<class_name>/*.png
+patches_dir: data/patches
+embeddings_dir: embeddings
+conch_checkpoint: hf_hub:MahmoodLab/conch
