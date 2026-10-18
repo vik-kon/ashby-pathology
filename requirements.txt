@@ -10,3 +10,4 @@ gradio
 huggingface_hub
 git+https://github.com/Mahmoodlab/CONCH.git
 transformers<5
+matplotlib

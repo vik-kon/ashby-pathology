@@ -2,5 +2,5 @@ quilt_dir: /work/nvme/bfqi/shared/datasets/quilt
 quilt_csv: /work/nvme/bfqi/shared/datasets/quilt/quilt_1M_lookup-002.csv
 pathgen_dir: /projects/bfqi/shared/datasets/pathgen_dataset
 metadata_csv: data/metadata.csv
-embeddings_dir: /work/nvme/bfqi/vkondagunta/embeddings
+embeddings_dir: /work/nvme/bfqi/vkondagunta/embeddings_clean
 conch_checkpoint: hf_hub:MahmoodLab/conch
