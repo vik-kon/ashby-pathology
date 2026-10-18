@@ -5,9 +5,6 @@ templates:
   - "a histopathology image showing {}."
 
 phrases:
-  tumor_cells:
-    - "tumor cells"
-    - "invasive carcinoma"
   necrosis:
     - "necrosis"
     - "dead tissue with loss of cellular detail"
@@ -24,31 +21,16 @@ phrases:
     - "collagen"
     - "fibrous protein"
     - "fibrous proteins"
-  glands:
-    - "glands"
-    - "gland"
-    - "glandular structures"
-    - "well-formed glands"
   mitoses:
     - "mitoses"
     - "mitotic figures"
     - "dividing cells"
-  fat:
-    - "fat"
-    - "fats"
-    - "adipose tissue"
-    - "fat cells"
   epithelium:
     - "epithelium"
     - "epithelial cells"
   lumen:
     - "lumen"
     - "glandular lumen"
-  goblet_cell:
-    - "goblet cells"
-    - "goblet cell"
-    - "mucin-filled goblet cell"
-    - "mucin-filled goblet cells"
   dysplasia:
     - "dysplasia"
     - "intraepithelial neoplasia"
@@ -59,12 +41,6 @@ phrases:
   nucleus:
     - "nucleus"
     - "nuclei"
-  muscle:
-    - "muscle"
-    - "muscles"
-    - "muscle cell"
-    - "myocyte"
-    - "muscle fiber"
   gleason_pattern_3:
     - "gleason pattern 3"
     -  "gleason's pattern 3"
