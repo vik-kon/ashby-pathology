@@ -12,49 +12,73 @@ phrases:
     - "necrosis"
     - "dead tissue with loss of cellular detail"
   lymphocytes:
+    - "lymphocytes"
+    - "lymphocyte"
     - "tumor-infiltrating lymphocytes"
     - "dense immune cell infiltrate"
   stroma:
-    - "fibrous stroma"
-    - "connective tissue"
+    - "stroma"
+    - "extracellular matrix"
+    - "fibroblast"
+    - "fibroblasts"
+    - "collagen"
+    - "fibrous protein"
+    - "fibrous proteins"
   glands:
+    - "glands"
+    - "gland"
     - "glandular structures"
     - "well-formed glands"
   mitoses:
+    - "mitoses"
     - "mitotic figures"
     - "dividing cells"
-  normal_tissue:
-    - "normal tissue"
-    - "benign tissue"
   fat:
+    - "fat"
+    - "fats"
     - "adipose tissue"
     - "fat cells"
   epithelium:
-    - "epidermis"
-    - "endothelium"
-    - "mesothelium"
+    - "epithelium"
+    - "epithelial cells"
   lumen:
-    - "cavity"
-    - "hollow"
+    - "lumen"
+    - "glandular lumen"
   goblet_cell:
-    - "caliciform cell"
-    - "mucous glands"
-  collagen:
-    - "fibrous protein"
-    - "structural protein"
-  glia:
-    - "sustentacular tissue"
-    - "neuroglia"
-  extracellular_matrix:
-    - "interstitial matrix"
-    - "basement membrane"
-  fibroblast:
-    - "reticular cell"
-    - "myofibroblast"
+    - "goblet cells"
+    - "goblet cell"
+    - "mucin-filled goblet cell"
+    - "mucin-filled goblet cells"
   dysplasia:
-    - "abnormality"
+    - "dysplasia"
     - "intraepithelial neoplasia"
+    - "dysplastic epithelium"
   hyperchromasia:
-    - "hyperchromia"
-    - "hyperchromaticity"
+    - "hyperchromatic nucleus"
+    - "hyperchromatic nuclei"
+  nucleus:
+    - "nucleus"
+    - "nuclei"
+  muscle:
+    - "muscle"
+    - "muscles"
+    - "muscle cell"
+    - "myocyte"
+    - "muscle fiber"
+  gleason_pattern_3:
+    - "gleason pattern 3"
+    -  "gleason's pattern 3"
+  gleason_pattern_4:
+    - "gleason pattern 4"
+    - "gleason's pattern 4"
+  gleason_pattern_5:
+    - "gleason pattern 5"
+    - "gleason's pattern 5"
+  cribriform_architecture:
+    - "cribriform architecture"
+    - "cribriform"
+  intraductal_carcinoma:
+    - "intraductal carcinoma"
+  ductal_adenocarcinoma:
+    - "ductal_adenocarcinoma"
     
