@@ -1,62 +1,62 @@
 # Feature 2: "Ctrl+F for a slide". Each key is a name shown in the app dropdown.
 # Each list has synonyms. The code averages their embeddings (a prompt ensemble).
 templates:
-  - "an H&E image of {}."
-  - "a histopathology image showing {}."
-  - "a photomicrograph of {}."
-  - "an image showing {}."
-  - "presence of {}."
-  - "{} is present."
+  - "an H&E image of {}."
+  - "a histopathology image showing {}."
+  - "a photomicrograph of {}."
+  - "an image showing {}."
+  - "presence of {}."
+  - "{} is present."
 
 phrases:
-  # Normal and background tissue: gives benign areas a correct answer
-  benign_prostate:
-    - "benign prostatic glands"
-    - "benign prostatic tissue"
-  stroma:
-    - "stroma"
-    - "fibromuscular stroma"
-    - "collagen"
-    - "fibroblasts"
-  fat:
-    - "fat"
-    - "adipose tissue"
-  lymphocytes:
-    - "lymphocytes"
-    - "tumor-infiltrating lymphocytes"
-    - "dense immune cell infiltrate"
-  necrosis:
-    - "necrosis"
-    - "dead tissue with loss of cellular detail"
-  lumen:
-    - "lumen"
-    - "glandular lumen"
-  epithelium:
-    - "epithelium"
-    - "epithelial cells"
+  # Normal and background tissue: gives benign areas a correct answer
+  benign_prostate:
+    - "benign prostatic glands"
+    - "benign prostatic tissue"
+  stroma:
+    - "stroma"
+    - "fibromuscular stroma"
+    - "collagen"
+    - "fibroblasts"
+  fat:
+    - "fat"
+    - "adipose tissue"
+  lymphocytes:
+    - "lymphocytes"
+    - "tumor-infiltrating lymphocytes"
+    - "dense immune cell infiltrate"
+  necrosis:
+    - "necrosis"
+    - "dead tissue with loss of cellular detail"
+  lumen:
+    - "lumen"
+    - "glandular lumen"
+  epithelium:
+    - "epithelium"
+    - "epithelial cells"
 
-  # Cancer and grading
-  gleason_pattern_3:
-    - "gleason pattern 3"
-    - "discrete well-formed infiltrating glands"
-  gleason_pattern_4:
-    - "gleason pattern 4"
-    - "fused, poorly formed, or cribriform glands"
-  gleason_pattern_5:
-    - "gleason pattern 5"
-    - "solid sheets, cords, or single tumor cells"
-  intraductal_carcinoma:
-    - "intraductal carcinoma"
-    - "intraductal carcinoma of the prostate"
-  ductal_adenocarcinoma:
-    - "ductal adenocarcinoma"
-    - "prostatic ductal adenocarcinoma"
-  dysplasia:
-    - "high-grade prostatic intraepithelial neoplasia"
-    - "dysplasia"
-  mitoses:
-    - "mitoses"
-    - "mitotic figures"
-  hyperchromasia:
-    - "hyperchromasia"
-    - "hyperchromatic nuclei"
+  # Cancer and grading
+  gleason_pattern_3:
+    - "gleason pattern 3"
+    - "discrete well-formed infiltrating glands"
+  gleason_pattern_4:
+    - "gleason pattern 4"
+    - "fused, poorly formed, or cribriform glands"
+  gleason_pattern_5:
+    - "gleason pattern 5"
+    - "solid sheets, cords, or single tumor cells"
+  intraductal_carcinoma:
+    - "intraductal carcinoma"
+    - "intraductal carcinoma of the prostate"
+  ductal_adenocarcinoma:
+    - "ductal adenocarcinoma"
+    - "prostatic ductal adenocarcinoma"
+  dysplasia:
+    - "high-grade prostatic intraepithelial neoplasia"
+    - "dysplasia"
+  mitoses:
+    - "mitoses"
+    - "mitotic figures"
+  hyperchromasia:
+    - "hyperchromasia"
+    - "hyperchromatic nuclei"
