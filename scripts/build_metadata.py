@@ -20,6 +20,9 @@ bad = df["not_histology"].astype(str).str.lower().isin(["true", "1"])
 df = df[~bad]
 df["path"] = df["image_path"].map(idx)
 df = df.dropna(subset=["path", "caption"])
+CANCER = r"carcinoma|tumou?r|neoplas|malignan|melanoma|lymphoma|sarcoma|metasta|glioma|blastoma|dysplasia|in situ|cancer"
+df = df[df["caption"].str.contains(CANCER, case=False, regex=True)]
+print("after cancer filter:", len(df))
 df["label"] = df["pathology"].fillna("unknown")
 df = df.sample(n=min(N, len(df)), random_state=0)[["path", "caption", "label", "subset", "split"]]
 
