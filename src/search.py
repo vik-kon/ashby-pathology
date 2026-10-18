@@ -11,7 +11,7 @@ def _load():
     model, pre, tok = load_conch(cfg)
     return model, pre, tok, Index(cfg["embeddings_dir"])
 
-def search(image, note="", note_weight=0.3, k=10):
+def search(image, note="", note_weight=0.3, k=10, dedup = .97):
     """Same contract as the stand-in. `image` can be a PIL image, a file path, or None."""
     model, pre, tok, index = _load()
     if isinstance(image, (str, Path)):
@@ -26,5 +26,17 @@ def search(image, note="", note_weight=0.3, k=10):
     if img_emb is None and txt_emb is None:
         return []
     q = fuse(img_emb, txt_emb, alpha=note_weight)
-    return [{"image": row["path"], "caption": row["caption"], "score": round(s, 3), "cancer_type": row["label"]}
-            for row, s in index.search(q, k)]
+    
+    ids, scores = index.search_ids(q, k * 8)
+    keep = []
+    for n, gid in enumerate(ids):
+        if all(float(index.embs[gid] @ index.embs[ids[m]]) < dedup for m in keep):
+            keep.append(n)
+        if len(keep) == k:
+            break
+    out = []
+    for n in keep:
+        row = index.meta.iloc[ids[n]]
+        out.append({"image": row["path"], "caption": row["caption"],
+                    "score": round(float(scores[n]), 3), "cancer_type": row["label"]})
+    return out

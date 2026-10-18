@@ -21,3 +21,7 @@ class Index:
     def search(self, q, k=8):
         s, i = self.index.search(_unit(q).astype("float32")[None], k)
         return [(self.meta.iloc[self.rows[j]], float(sc)) for j, sc in zip(i[0], s[0])]
+    
+    def search_ids(self, q, k=8):
+        s, i = self.index.search(_unit(q).astype("float32")[None], k)
+        return self.rows[i[0]], s[0]
