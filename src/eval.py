@@ -39,6 +39,15 @@ def run(K=10, seed=0):
 
     rng = np.random.default_rng(seed)
     rand = db_dx[rng.integers(0, len(db_dx), size=(len(q_rows), K))] == q_dx
+    q_labels = meta["dx"].to_numpy()[q_rows]
+    print("Per-diagnosis Recall@5 (diagnoses with >=20 queries):")
+    macro = []
+    for dx in pd.Series(q_labels).value_counts().loc[lambda s: s >= 20].index:
+        mask = q_labels == dx
+        r, b = hits[mask, :5].any(1).mean(), rand[mask, :5].any(1).mean()
+        macro.append((r, b))
+        print(f"  {dx:26s} n={mask.sum():4d}  Recall@5 {r:.1%}  random {b:.1%}")
+    print(f"Macro-average Recall@5: {np.mean([m[0] for m in macro]):.1%}  (random {np.mean([m[1] for m in macro]):.1%})\n")
 
     rows = []
     for k in (1, 5, 10):
