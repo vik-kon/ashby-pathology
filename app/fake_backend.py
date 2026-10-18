@@ -89,3 +89,7 @@ def search(image, note="", note_weight=0.3, k=10):
         results.append({**row, "score": round(score, 3)})
     results.sort(key=lambda r: r["score"], reverse=True)
     return results[:k]
+
+import os
+if os.environ.get("USE_REAL_SEARCH") == "1":
+    from src.search import search
