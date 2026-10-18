@@ -108,7 +108,7 @@ def build_ui(search_fn, scorer, search_live=False, heatmap_live=False):
 
         gallery = [(r["image"], f"#{i}") for i, r in enumerate(results, 1)]
         table = [
-            [i, f"{float(r['score']):.3f}", r.get("cancer_type", ""), r.get("caption", "")]
+            [i, f"{float(r['score']):.3f}", str(r.get("cancer_type", "")).strip("[]").replace("'", ""), r.get("caption", "")]
             for i, r in enumerate(results, 1)
         ]
         return (
@@ -194,7 +194,7 @@ def build_ui(search_fn, scorer, search_live=False, heatmap_live=False):
                             visible=False, elem_classes="results-gallery", buttons=["fullscreen"],
                         )
                         table = gr.Dataframe(
-                            headers=["Rank", "Score", "Cancer type", "Caption"],
+                            headers=["Rank", "Score", "Specialty tags", "Caption"],
                             column_widths=["72px", "84px", "124px", "auto"],
                             wrap=True, interactive=False, visible=False, elem_classes="results-table",
                         )
