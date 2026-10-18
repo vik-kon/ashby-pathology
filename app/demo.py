@@ -64,7 +64,7 @@ def get_search_fn(real):
 
         return search
     try:
-        from src.retrieve import search  # the agreed function, once Vikram adds it
+        from src.search import search  # the agreed function, once Vikram adds it
 
         return search
     except ImportError:
@@ -272,8 +272,10 @@ def main():
         search_live=args.real_search,
         heatmap_live=args.real_heatmap,
     )
-    launch(demo, share=args.share)
-
+    launch(demo, share=args.share, allowed_paths=[
+        "/work/nvme/bfqi/shared/datasets",
+        "/projects/bfqi/shared/datasets",
+    ])
 
 if __name__ == "__main__":
     main()
