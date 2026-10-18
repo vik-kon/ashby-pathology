@@ -33,7 +33,7 @@ FAKE_CAPTIONS = [
     "Fibrous stroma with scattered inflammatory cells.",
     "Normal lung parenchyma with intact alveoli.",
 ]
-FAKE_TYPES = ["BRCA", "LUAD", "LUSC", "COAD"]
+FAKE_TYPES = ["Pulmonary", "Breast", "Gastrointestinal", "Dermatopathology, Soft tissue"]
 
 _pool = None
 

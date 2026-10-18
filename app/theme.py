@@ -59,10 +59,10 @@ THEME = gr.themes.Base(
     block_radius="10px",
     block_label_text_color="#3E4B62",
     block_label_text_color_dark="#C5D0E1",
-    block_label_background_fill="transparent",
-    block_label_background_fill_dark="transparent",
-    block_label_border_color="transparent",
-    block_label_border_color_dark="transparent",
+    block_label_background_fill="#FFFFFF",
+    block_label_background_fill_dark="#111A2B",
+    block_label_border_color="#E1E6ED",
+    block_label_border_color_dark="#223049",
     block_title_text_color="#0D1B33",
     block_title_text_color_dark="#E6EBF3",
     # inputs
@@ -204,12 +204,13 @@ CSS = """
 
 /* Gallery tiles: size to their content instead of a fixed-height box */
 .results-gallery, .results-gallery .gallery-container { height: auto !important; }
-.results-gallery .grid-wrap { height: auto !important; min-height: 0 !important; max-height: none !important; }
+.results-gallery .grid-wrap { height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; }
+.results-gallery .gallery-container { overflow: visible !important; }
 .results-gallery .thumbnail-item, .results-gallery button.thumbnail-item { border-radius: 8px !important; }
 .results-gallery { border-radius: 12px !important; }
 
 /* Table: short columns never break mid-number */
-.results-table th:nth-child(-n+3), .results-table td:nth-child(-n+3) { white-space: nowrap; }
+.results-table th:nth-child(-n+2), .results-table td:nth-child(-n+2) { white-space: nowrap; }
 
 /* Heatmap viewer */
 .viewer-tools { align-items: center !important; gap: 16px !important; }
@@ -220,6 +221,7 @@ CSS = """
   background: linear-gradient(90deg, #440154, #3B528B, #21918C, #5EC962, #FDE725);
 }
 .legend b { color: var(--navy); font-weight: 600; }
+.legend-note { font-size: 0.8125rem; color: var(--slate); margin: 6px 0 0; }
 .result-note p { color: var(--slate); font-size: 0.9375rem; margin: 0; }
 .subsection { font-size: 0.9375rem; font-weight: 600; color: var(--navy); margin: 8px 0 0; }
 
@@ -299,10 +301,12 @@ def empty_html(kind):
     return f'<div class="empty">{icon}<h3>{title}</h3><p>{body}</p></div>'
 
 
-def legend_html(lo=None, hi=None):
-    left = f"Weaker match <b>{lo:.3f}</b>" if lo is not None else "Weaker match"
-    right = f"<b>{hi:.3f}</b> Stronger match" if hi is not None else "Stronger match"
-    return f'<div class="legend"><span>{left}</span><span class="bar"></span><span>{right}</span></div>'
+def legend_html():
+    """Fixed 0-100% scale: the same color always means the same strength of match."""
+    return (
+        '<div class="legend"><b>0%</b><span class="bar"></span><b>100%</b></div>'
+        '<p class="legend-note">Chance that each tile is this term rather than another term in the list.</p>'
+    )
 
 
 def rail_heading_html(text):

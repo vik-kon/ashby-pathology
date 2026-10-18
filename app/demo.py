@@ -6,7 +6,7 @@ Run from the repo root:
     python app/demo.py --real-heatmap   # CONCH for slide search
     python app/demo.py --share          # public link (for example when running on Delta)
 
-The search format the app expects (fake_backend.py follows it; src/retrieve.py should too):
+The search format the app expects (fake_backend.py and Vikram's src/search.py both follow it):
     search(image=None, note="", note_weight=0.3, k=10) -> list of dicts, best first
         each dict: {"image": path or PIL image, "caption": str, "score": float,
                     optional "cancer_type"}
@@ -16,6 +16,8 @@ The search format the app expects (fake_backend.py follows it; src/retrieve.py s
 """
 
 import argparse
+import math
+import os
 import sys
 from pathlib import Path
 
@@ -40,43 +42,47 @@ EXAMPLE_NOTES = [
 ]
 
 
-def _search_from_index():
-    """Used until src/retrieve.py has a search() function: wraps Vikram's Index.
-    Supports text-only search for now, since that's what Index.search_text does."""
-    from src.models import load_conch
-    from src.retrieve import Index
-
-    model, _, tokenizer = load_conch()
-    index = Index()
-
-    def search(image=None, note="", note_weight=0.3, k=10):
-        if image is not None:
-            raise gr.Error("Image search isn't connected yet. Remove the image and search by description.")
-        hits = index.search_text(model, tokenizer, note, int(k))
-        return [{"image": str(p), "caption": Path(p).name, "score": float(s)} for p, s in hits]
-
-    return search
+def _missing_model_exit(what, err):
+    raise SystemExit(
+        f"{what} needs PyTorch and CONCH installed ({err}).\n"
+        "On a laptop, run without that flag, or install them: "
+        "pip install torch --index-url https://download.pytorch.org/whl/cpu && "
+        "pip install git+https://github.com/mahmoodlab/CONCH.git"
+    )
 
 
 def get_search_fn(real):
     if not real:
-        from app.fake_backend import search
+        from app.fake_backend import search  # becomes the real search if USE_REAL_SEARCH=1 is set
 
         return search
     try:
-        from src.search import search  # the agreed function, once Vikram adds it
-
-        return search
-    except ImportError:
-        return _search_from_index()
+        from src.search import search  # Vikram's search: needs CONCH and the embeddings on Delta
+    except ImportError as err:
+        _missing_model_exit("--real-search", err)
+    return search
 
 
 def get_scorer(real, checkpoint=None):
-    if real:
+    if not real:
+        return FakeScorer()
+    try:
         from src.heatmap import ConchScorer
 
         return ConchScorer(checkpoint_path=checkpoint)
-    return FakeScorer()
+    except ImportError as err:
+        _missing_model_exit("--real-heatmap", err)
+
+
+def format_tags(value):
+    """Specialty tags arrive as a list, as text like "['Pulmonary', 'Breast']", or missing.
+    Show them as "Pulmonary, Breast", and show nothing when missing."""
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return ""
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(v) for v in value)
+    text = str(value).strip().strip("[]").replace("'", "").replace('"', "")
+    return "" if text.lower() in ("", "nan", "none") else text
 
 
 def build_ui(search_fn, scorer, search_live=False, heatmap_live=False):
@@ -108,7 +114,7 @@ def build_ui(search_fn, scorer, search_live=False, heatmap_live=False):
 
         gallery = [(r["image"], f"#{i}") for i, r in enumerate(results, 1)]
         table = [
-            [i, f"{float(r['score']):.3f}", str(r.get("cancer_type", "")).strip("[]").replace("'", ""), r.get("caption", "")]
+            [i, f"{float(r['score']):.3f}", format_tags(r.get("cancer_type")), r.get("caption", "")]
             for i, r in enumerate(results, 1)
         ]
         return (
@@ -132,20 +138,25 @@ def build_ui(search_fn, scorer, search_live=False, heatmap_live=False):
         base = image.convert("RGB")
         overlay = draw_overlay(base, grid, int(tile_size), max_alpha=float(strength)) if strength > 0 else base
         vals = grid[~np.isnan(grid)]
+        skipped = grid.size - len(vals)
+        leaning = int((vals >= 0.5).sum())
         label = phrase.replace("_", " ")
-        head = results_head_html(
-            f"Where \u201c{label}\u201d appears",
-            f"{len(vals)} tissue tiles scored. A narrow score range means nothing stands out.",
-            heatmap_status,
+        sub = (
+            f"{leaning} of {len(vals)} tissue tiles lean toward \u201c{label}\u201d over the other terms in the list."
+            if leaning else
+            f"None of the {len(vals)} tissue tiles lean toward \u201c{label}\u201d over the other terms in the list."
         )
-        top = [(tile, f"{score:.3f}") for tile, score in top_tiles]
+        if skipped:
+            sub += f" {skipped} empty tiles were skipped."
+        head = results_head_html(f"Where \u201c{label}\u201d appears", sub, heatmap_status)
+        top = [(tile, f"{score:.0%}") for tile, score in top_tiles]
         state = {"image": base, "grid": grid, "tile": int(tile_size)}
         return (
             gr.update(value=head),
             gr.update(visible=False),
             gr.update(visible=True),
             overlay,
-            gr.update(value=legend_html(float(vals.min()), float(vals.max()))),
+            gr.update(value=legend_html()),
             top,
             state,
         )
@@ -195,8 +206,8 @@ def build_ui(search_fn, scorer, search_live=False, heatmap_live=False):
                         )
                         table = gr.Dataframe(
                             headers=["Rank", "Score", "Specialty tags", "Caption"],
-                            column_widths=["72px", "84px", "124px", "auto"],
-                            wrap=True, interactive=False, visible=False, elem_classes="results-table",
+                            column_widths=["64px", "80px", "170px", "auto"],
+                            wrap=True, interactive=False, visible=False, elem_classes="results-table", max_height=760,
                         )
                 search_btn.click(
                     run_search, [query_img, note, note_weight, k], [search_head, search_empty, gallery, table]
@@ -269,13 +280,15 @@ def main():
     demo = build_ui(
         get_search_fn(args.real_search),
         get_scorer(args.real_heatmap, args.checkpoint),
-        search_live=args.real_search,
+        search_live=args.real_search or os.environ.get("USE_REAL_SEARCH") == "1",
         heatmap_live=args.real_heatmap,
     )
+    # Let Gradio show result images stored in the shared dataset folders on Delta
     launch(demo, share=args.share, allowed_paths=[
         "/work/nvme/bfqi/shared/datasets",
         "/projects/bfqi/shared/datasets",
     ])
+
 
 if __name__ == "__main__":
     main()

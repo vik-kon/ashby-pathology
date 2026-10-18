@@ -1,22 +1,23 @@
 """Feature 2: search inside a slide image for a phrase and draw a heatmap.
 
-Steps: cut the image into tiles -> skip background -> score each tile against
-the phrase -> color the tiles by score on top of the image.
+Steps: cut the image into tiles -> skip empty glass -> score each tile -> color
+the tiles by score on top of the image.
+
+How tiles are scored (real model): each tile is compared with EVERY term in
+prompts/phrases.yaml at once, and the score is the chance (0 to 1) that the tile
+is the chosen term rather than one of the others. This is CONCH's zero-shot
+classification, applied tile by tile. Because the score is relative to the other
+terms, it is comparable across phrases, and a term that isn't in the image scores
+low everywhere instead of always lighting something up. Colors use a fixed
+0-100% scale for the same reason.
 
 Uses the team's code: load_conch() and encode_text() from src/models.py, and the
 phrases + templates in prompts/phrases.yaml (templates use {} for the phrase).
 
-Develop on a laptop with the fake scorer (no model or GPU needed):
+Develop on a laptop with the placeholder scorer (no model needed):
     python -m src.heatmap --image test_images/he.jpg --phrase necrosis --fake
-
-Use CONCH (on Delta, or on a laptop once your Hugging Face access is approved):
+With CONCH:
     python -m src.heatmap --image test_images/he.jpg --phrase necrosis
-    python -m src.heatmap --image test_images/he.jpg --phrase necrosis --checkpoint hf_hub:MahmoodLab/conch
-    (for hf_hub, first run: export HF_TOKEN=your_token)
-
-Note: colors are scaled within each image, so the best-matching tile is always
-"hot" even if the phrase is absent. The raw score range is reported alongside the
-heatmap so you can tell a real match from a weak one.
 """
 
 import argparse
@@ -30,6 +31,8 @@ from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TEMPLATES = ["an H&E image of {}."]
+# Used only if phrases.yaml has fewer than two terms, so there is always something to compare against
+FALLBACK_PANEL = ["tumor cells", "stroma", "normal tissue", "necrosis", "lymphocytes", "adipose tissue"]
 
 
 def load_phrases(path=REPO_ROOT / "prompts" / "phrases.yaml"):
@@ -45,8 +48,8 @@ def load_phrases(path=REPO_ROOT / "prompts" / "phrases.yaml"):
 
 
 def phrase_texts(phrase, cfg):
-    """All sentences for one phrase: every synonym dropped into every template.
-    A phrase not in phrases.yaml (typed by the user) is used as its own only synonym."""
+    """All sentences for one term: every synonym dropped into every template.
+    A term not in phrases.yaml (typed by the user) is used as its own only synonym."""
     synonyms = cfg["phrases"].get(phrase, [phrase])
     return [t.format(s) for s in synonyms for t in cfg["templates"]]
 
@@ -69,18 +72,23 @@ def tile_image(img, tile_size=256):
     return tiles, coords, (n_rows, n_cols)
 
 
-def is_tissue(tile, min_saturation=0.07):
-    """Stained tissue is colorful; empty glass is near-white with almost no color saturation."""
-    saturation = np.asarray(tile.convert("HSV"))[..., 1] / 255.0
-    return float(saturation.mean()) > min_saturation
+def is_tissue(tile, min_stained=0.01):
+    """Keep a tile if at least 1% of its pixels are stained (colored or dark).
+
+    Empty glass is near-white everywhere. Tissue that is mostly white space, like fat
+    or lung, still has thin stained walls, so it passes; the old average-color check
+    threw those tiles away.
+    """
+    hsv = np.asarray(tile.convert("HSV"), dtype=np.float32) / 255.0
+    stained = (hsv[..., 1] > 0.12) | (hsv[..., 2] < 0.6)
+    return float(stained.mean()) >= min_stained
 
 
-# ---------- Scorers (same interface: .name and .score(tiles, phrase, cache_key=None)) ----------
+# ---------- Scorers (same interface: .name and .score(tiles, phrase, cache_key=None) -> values 0..1) ----------
 
 class FakeScorer:
     """Placeholder for development only. Ignores the phrase and scores tiles by how dark
-    the stain is (dense nuclei look dark), just so the tiling and drawing can be built
-    and tested without a model."""
+    the stain is (dense nuclei look dark), so tiling and drawing can be built without a model."""
 
     name = "fake"
 
@@ -89,23 +97,34 @@ class FakeScorer:
 
 
 class ConchScorer:
-    """Real scorer: similarity between each tile's CONCH embedding and the phrase's text embedding."""
+    """Real scorer: per tile, the chance (0-1) that it is `phrase` rather than any other term in phrases.yaml."""
 
     name = "conch"
 
     def __init__(self, checkpoint_path=None, batch_size=64):
         from src.models import load_conch
 
-        # checkpoint_path=None uses conch_checkpoint from configs/paths.yaml (the Delta path)
+        # checkpoint_path=None uses conch_checkpoint from configs/paths.yaml
         cfg = {"conch_checkpoint": checkpoint_path} if checkpoint_path else None
         self.model, self.preprocess, self.tokenizer = load_conch(cfg)
         self.batch_size = batch_size
         self.cfg = load_phrases()
-        self._tile_cache = {}  # embedding the tiles is the slow part, so reuse it across phrases
+        scale = getattr(self.model, "logit_scale", None)
+        self.logit_scale = float(scale.detach().exp()) if scale is not None else 100.0
+        self._tile_cache = {}  # embedding tiles is the slow part, so reuse it across phrases
         self._text_cache = {}
 
+    def _panel(self, phrase):
+        """The terms each tile is compared against: everything in phrases.yaml, plus a typed phrase."""
+        names = list(self.cfg["phrases"])
+        if len(names) < 2:
+            names = list(dict.fromkeys(names + FALLBACK_PANEL))
+        if phrase not in names:
+            names.append(phrase)
+        return names
+
     def _text_vector(self, phrase):
-        """Average the embeddings of all sentences for this phrase (a prompt ensemble)."""
+        """Average the embeddings of all sentences for a term (a prompt ensemble)."""
         if phrase not in self._text_cache:
             import torch.nn.functional as F
 
@@ -129,26 +148,30 @@ class ConchScorer:
         return torch.cat(out)
 
     def score(self, tiles, phrase, cache_key=None):
+        import torch
+
         if cache_key is not None and cache_key in self._tile_cache:
             tile_emb = self._tile_cache[cache_key]
         else:
             tile_emb = self._embed_tiles(tiles)
             if cache_key is not None:
                 self._tile_cache[cache_key] = tile_emb
-        return (tile_emb @ self._text_vector(phrase)).float().cpu().numpy()
+
+        names = self._panel(phrase)
+        text = torch.stack([self._text_vector(n) for n in names])        # [terms, D]
+        probs = (self.logit_scale * tile_emb @ text.T).softmax(dim=-1)    # [tiles, terms]
+        return probs[:, names.index(phrase)].float().cpu().numpy()
 
 
 # ---------- Heatmap ----------
 
-def draw_overlay(img, grid, tile_size, max_alpha=0.6, cmap="viridis"):
-    """Color each tissue tile by its score. Higher scores are brighter and more opaque;
-    background tiles (NaN) stay transparent. max_alpha=0 returns the tissue unchanged."""
+def draw_overlay(img, grid, tile_size, max_alpha=0.6, cmap="viridis", vmin=0.0, vmax=1.0):
+    """Color each tissue tile by its score on a FIXED scale (0 to 1 by default), so a weak
+    match looks weak even if it is the best tile in the image. Higher scores are brighter
+    and more opaque; skipped tiles (NaN) stay transparent. max_alpha=0 returns the tissue unchanged."""
     import matplotlib
 
-    vals = grid[~np.isnan(grid)]
-    lo, hi = float(vals.min()), float(vals.max())
-    norm = np.nan_to_num((grid - lo) / (hi - lo + 1e-8))
-
+    norm = np.clip(np.nan_to_num((grid - vmin) / (vmax - vmin)), 0.0, 1.0)
     colors = matplotlib.colormaps[cmap](norm)  # [rows, cols, 4], values 0-1
     colors[..., 3] = np.where(np.isnan(grid), 0.0, max_alpha * (0.08 + 0.92 * norm))
     heat = Image.fromarray((colors * 255).astype(np.uint8))
@@ -160,24 +183,24 @@ def draw_overlay(img, grid, tile_size, max_alpha=0.6, cmap="viridis"):
     return Image.alpha_composite(base, layer).convert("RGB")
 
 
-def heatmap_for_image(img, phrase, scorer, tile_size=256, min_saturation=0.07, n_top=5):
+def heatmap_for_image(img, phrase, scorer, tile_size=256, min_stained=0.01, n_top=5):
     """Run the whole pipeline on one image.
 
     Returns (overlay_image, top_tiles, grid):
       overlay_image: the input with the heatmap drawn on top
       top_tiles:     [(tile_image, score), ...] for the n_top best-matching regions
-      grid:          raw scores per tile position (NaN = background)
+      grid:          score per tile position, 0 to 1 (NaN = skipped as empty glass)
     """
     img = img.convert("RGB")
     tiles, coords, (n_rows, n_cols) = tile_image(img, tile_size)
     if not tiles:
         raise ValueError(f"Image is smaller than one {tile_size}px tile. Use a bigger image or a smaller tile size.")
 
-    keep = [i for i, t in enumerate(tiles) if is_tissue(t, min_saturation)]
+    keep = [i for i, t in enumerate(tiles) if is_tissue(t, min_stained)]
     if not keep:
-        raise ValueError("No tissue found. The image may be mostly background, or try lowering min_saturation.")
+        raise ValueError("No tissue found. The image looks like empty glass.")
 
-    cache_key = f"{hashlib.md5(img.tobytes()).hexdigest()}_{tile_size}_{min_saturation}"
+    cache_key = f"{hashlib.md5(img.tobytes()).hexdigest()}_{tile_size}_{min_stained}"
     scores = np.asarray(scorer.score([tiles[i] for i in keep], phrase, cache_key=cache_key), dtype=np.float32)
 
     grid = np.full((n_rows, n_cols), np.nan, dtype=np.float32)
@@ -191,7 +214,7 @@ def heatmap_for_image(img, phrase, scorer, tile_size=256, min_saturation=0.07, n
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Highlight where a phrase appears in a slide image")
+    parser = argparse.ArgumentParser(description="Highlight where a term appears in a slide image")
     parser.add_argument("--image", required=True)
     parser.add_argument("--phrase", required=True, help="a name from phrases.yaml (like necrosis), or any text")
     parser.add_argument("--tile-size", type=int, default=256)
@@ -209,9 +232,9 @@ def main():
     overlay.save(out)
 
     vals = grid[~np.isnan(grid)]
-    print(f"Tiles: {grid.size} total, {len(vals)} tissue")
-    print(f"Raw score range: {vals.min():.3f} to {vals.max():.3f}")
-    print(f"Top tile scores: {[round(s, 3) for _, s in top_tiles]}")
+    print(f"Tiles: {grid.size} total, {len(vals)} tissue, {grid.size - len(vals)} skipped as empty glass")
+    print(f"Tiles leaning toward '{args.phrase}' (over 50%): {int((vals >= 0.5).sum())} of {len(vals)}")
+    print(f"Top tile scores: {[f'{s:.0%}' for _, s in top_tiles]}")
     print(f"Saved heatmap to {out}")
 
 
